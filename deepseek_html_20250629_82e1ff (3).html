@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ai Master - Prompt Gallery</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Rajdhani', 'Arial', sans-serif;
+        }
+
+        body {
+            background: #0a0a1a;
+            color: #e0e0ff;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .cyber-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 100, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 100, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            opacity: 0.7;
+        }
+
+        .cyber-grid::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(0, 200, 255, 0.1), transparent 70%);
+            animation: pulse 6s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.1; }
+            100% { opacity: 0.3; }
+        }
+
+        .glowing-border {
+            position: relative;
+            border: 2px solid transparent;
+            border-radius: 15px;
+            background: rgba(10, 15, 30, 0.8);
+            box-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
+            overflow: hidden;
+        }
+
+        .glowing-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ff00cc, #00ccff, #00ff99, #ff9900);
+            background-size: 400% 400%;
+            z-index: -1;
+            border-radius: 15px;
+            animation: glowing 3s ease infinite;
+        }
+
+        @keyframes glowing {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px #00ccff, 0 0 20px #00ccff, 0 0 30px #00ccff;
+            color: #ffffff;
+        }
+
+        .neon-button {
+            background: linear-gradient(45deg, #00ccff, #00ffcc);
+            color: #0a0a1a;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(0, 204, 255, 0.7);
+        }
+
+        .neon-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 25px rgba(0, 204, 255, 0.9);
+        }
+
+        .neon-button:active {
+            transform: translateY(1px);
+        }
+
+        .neon-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: 0.5s;
+        }
+
+        .neon-button:hover::before {
+            left: 100%;
+        }
+
+        /* Header styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            position: relative;
+        }
+
+        .app-title {
+            font-size: 2.5rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            position: relative;
+        }
+
+        .app-title::after {
+            content: 'By MixyOx';
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            font-size: 1rem;
+            color: #00ccff;
+            width: 100%;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .about-btn {
+            background: transparent;
+            border: 2px solid #00ccff;
+            color: #00ccff;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .about-btn:hover {
+            color: #0a0a1a;
+            box-shadow: 0 0 15px rgba(0, 204, 255, 0.7);
+        }
+
+        .about-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background: #00ccff;
+            z-index: -1;
+            transition: 0.5s;
+        }
+
+        .about-btn:hover::before {
+            width: 100%;
+        }
+
+        /* Main content */
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .gallery-title {
+            text-align: center;
+            font-size: 2.2rem;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .gallery-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 10%;
+            width: 80%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #00ccff, #00ffcc, transparent);
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .card {
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+        }
+
+        /* IMAGE SIZE ENHANCEMENT - ONLY CHANGE MADE */
+        .card-image {
+            width: 100%;
+            height: auto; /* Changed to auto */
+            max-height: 600px; /* Set maximum height */
+            object-fit: contain; /* Changed to contain */
+            display: block;
+            border-radius: 15px 15px 0 0;
+            background: #0a0a1a; /* Background for empty space */
+        }
+
+        .card-content {
+            padding: 20px;
+            background: rgba(20, 25, 45, 0.9);
+        }
+
+        .card-prompt {
+            color: #a0f0ff;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            min-height: 80px;
+        }
+
+        .card-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .copy-btn {
+            background: linear-gradient(45deg, #ff00cc, #cc00ff);
+        }
+
+        .chatgpt-btn {
+            background: linear-gradient(45deg, #00ff99, #00cc66);
+        }
+
+        /* Footer styles */
+        footer {
+            background: rgba(10, 15, 30, 0.9);
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+            border-top: 1px solid rgba(0, 200, 255, 0.3);
+        }
+
+        .developer-info {
+            margin-bottom: 25px;
+        }
+
+        .developer-info h3 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #00ccff;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 30px;
+            transition: all 0.3s;
+            background: rgba(0, 50, 80, 0.3);
+            border: 1px solid rgba(0, 200, 255, 0.3);
+        }
+
+        .social-link:hover {
+            background: rgba(0, 100, 150, 0.5);
+            box-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
+            transform: translateY(-3px);
+        }
+
+        .social-link i {
+            font-size: 1.2rem;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 10, 20, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+            border-radius: 20px;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #ff3366;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .close-modal:hover {
+            text-shadow: 0 0 10px #ff3366;
+            transform: rotate(90deg);
+        }
+
+        .modal-title {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 2rem;
+        }
+
+        .modal-links {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .modal-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            background: rgba(30, 40, 70, 0.8);
+            color: #00ccff;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .modal-link:hover {
+            background: rgba(50, 70, 120, 0.8);
+            transform: translateX(10px);
+        }
+
+        .modal-link i {
+            font-size: 1.5rem;
+        }
+
+        .prompt-modal-content {
+            text-align: center;
+        }
+
+        .prompt-text {
+            background: rgba(20, 30, 50, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 25px 0;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            border: 1px solid rgba(0, 200, 255, 0.3);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: flex;
+            justify-content: center;
+            margin: 50px 0;
+        }
+
+        .spinner div {
+            width: 20px;
+            height: 20px;
+            background: #00ccff;
+            border-radius: 50%;
+            margin: 0 5px;
+            animation: bounce 1.5s infinite ease-in-out;
+        }
+
+        .spinner div:nth-child(2) {
+            animation-delay: 0.2s;
+            background: #ff00cc;
+        }
+
+        .spinner div:nth-child(3) {
+            animation-delay: 0.4s;
+            background: #00ff99;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        /* Status message */
+        .status-message {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .success {
+            background: rgba(0, 200, 100, 0.2);
+            border: 1px solid #00cc66;
+            color: #00ff99;
+        }
+
+        .error {
+            background: rgba(200, 50, 50, 0.2);
+            border: 1px solid #ff3366;
+            color: #ff6699;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .gallery-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .social-links {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background elements -->
+    <div id="particles-js"></div>
+    <div class="cyber-grid"></div>
+
+    <!-- Header -->
+    <header>
+        <h1 class="app-title neon-text">Ai Master</h1>
+        <button class="about-btn" id="about-btn">
+            <i class="fas fa-info-circle"></i> About
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h2 class="gallery-title neon-text">Prompt Gallery</h2>
+        
+        <div class="status-message" id="status-message"></div>
+        
+        <div class="gallery-grid" id="gallery-grid">
+            <div class="spinner">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="developer-info">
+            <h3 class="neon-text">Developed By @MixyOx</h3>
+            <div class="social-links">
+                <a href="https://t.me/mixy_ox" target="_blank" class="social-link glowing-border">
+                    <i class="fab fa-telegram"></i> Telegram
+                </a>
+                <a href="https://www.instagram.com/mixy_ox?igsh=MXNmbGo5anpjbWY4aQ==" target="_blank" class="social-link glowing-border">
+                    <i class="fab fa-instagram"></i> Instagram
+                </a>
+                <a href="https://youtube.com/@mixyox-1?si=mveL0YZbEPgcAs6H" target="_blank" class="social-link glowing-border">
+                    <i class="fab fa-youtube"></i> YouTube
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- About Modal -->
+    <div class="modal" id="about-modal">
+        <div class="modal-content glowing-border">
+            <span class="close-modal" id="close-about">&times;</span>
+            <h2 class="modal-title neon-text">About Ai Master</h2>
+            <p>Ai Master is a cutting-edge platform designed to showcase AI-generated art and prompts. Developed by MixyOx, this application allows users to browse, copy, and use creative prompts for their own AI art generation.</p>
+            
+            <div class="modal-links">
+                <h3>Connect with Developer:</h3>
+                <a href="https://t.me/mixy_ox" target="_blank" class="modal-link">
+                    <i class="fab fa-telegram"></i> Telegram: https://t.me/mixy_ox
+                </a>
+                <a href="https://www.instagram.com/mixy_ox?igsh=MXNmbGo5anpjbWY4aQ==" target="_blank" class="modal-link">
+                    <i class="fab fa-instagram"></i> Instagram: https://www.instagram.com/mixy_ox
+                </a>
+                <a href="https://youtube.com/@mixyox-1?si=mveL0YZbEPgcAs6H" target="_blank" class="modal-link">
+                    <i class="fab fa-youtube"></i> YouTube: https://youtube.com/@mixyox-1
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prompt Modal -->
+    <div class="modal" id="prompt-modal">
+        <div class="modal-content glowing-border">
+            <span class="close-modal" id="close-prompt">&times;</span>
+            <div class="prompt-modal-content">
+                <h2 class="modal-title neon-text">Prompt Copied!</h2>
+                <div class="prompt-text" id="displayed-prompt">
+                    <!-- Prompt will appear here -->
+                </div>
+                <button class="neon-button" id="use-on-chatgpt">
+                    <i class="fas fa-robot"></i> Use On ChatGPT
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Firebase with your configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD36qcu7ePQMJIBZh_eaqpoH-9-gDQhWiU",
+            authDomain: "prompt-ac620.firebaseapp.com",
+            databaseURL: "https://prompt-ac620-default-rtdb.firebaseio.com",
+            projectId: "prompt-ac620",
+            storageBucket: "prompt-ac620.appspot.com",
+            messagingSenderId: "931713897091",
+            appId: "1:931713897091:web:be480180155782b8e401b6",
+            measurementId: "G-F6DJ2VJCJ8"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // DOM elements
+        const galleryGrid = document.getElementById('gallery-grid');
+        const aboutModal = document.getElementById('about-modal');
+        const promptModal = document.getElementById('prompt-modal');
+        const aboutBtn = document.getElementById('about-btn');
+        const closeAbout = document.getElementById('close-about');
+        const closePrompt = document.getElementById('close-prompt');
+        const displayedPrompt = document.getElementById('displayed-prompt');
+        const useOnChatGPT = document.getElementById('use-on-chatgpt');
+        const statusMessage = document.getElementById('status-message');
+        
+        // Show status message
+        function showStatus(message, isSuccess) {
+            statusMessage.textContent = message;
+            statusMessage.className = isSuccess ? 'status-message success' : 'status-message error';
+            statusMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Modal functionality
+        aboutBtn.addEventListener('click', () => {
+            aboutModal.style.display = 'flex';
+        });
+        
+        closeAbout.addEventListener('click', () => {
+            aboutModal.style.display = 'none';
+        });
+        
+        closePrompt.addEventListener('click', () => {
+            promptModal.style.display = 'none';
+        });
+        
+        // Close modals when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === aboutModal) aboutModal.style.display = 'none';
+            if (e.target === promptModal) promptModal.style.display = 'none';
+        });
+        
+        // Use on ChatGPT functionality
+        useOnChatGPT.addEventListener('click', () => {
+            window.open('https://chat.openai.com', '_blank');
+        });
+        
+        // Copy prompt functionality
+        function copyPrompt(prompt) {
+            navigator.clipboard.writeText(prompt)
+                .then(() => {
+                    displayedPrompt.textContent = prompt;
+                    promptModal.style.display = 'flex';
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                    showStatus('Failed to copy prompt to clipboard', false);
+                });
+        }
+        
+        // Create gallery cards
+        function createCard(imageUrl, prompt) {
+            const card = document.createElement('div');
+            card.className = 'card glowing-border';
+            
+            card.innerHTML = `
+                <img src="${imageUrl}" alt="AI Generated Art" class="card-image" onerror="this.src='https://via.placeholder.com/1080x1920/0a0a1a/00ccff?text=Image+Not+Available'">
+                <div class="card-content">
+                    <p class="card-prompt">${prompt}</p>
+                    <div class="card-buttons">
+                        <button class="neon-button copy-btn">
+                            <i class="fas fa-copy"></i> Copy Prompt
+                        </button>
+                        <button class="neon-button chatgpt-btn">
+                            <i class="fas fa-robot"></i> Use on ChatGPT
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            galleryGrid.appendChild(card);
+            
+            // Add event listeners
+            const copyBtn = card.querySelector('.copy-btn');
+            const chatgptBtn = card.querySelector('.chatgpt-btn');
+            
+            copyBtn.addEventListener('click', () => {
+                copyPrompt(prompt);
+            });
+            
+            chatgptBtn.addEventListener('click', () => {
+                window.open('https://chat.openai.com', '_blank');
+            });
+        }
+        
+        // Initialize particles background
+        function initParticles() {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0);
+            document.getElementById('particles-js').appendChild(renderer.domElement);
+            
+            // Create particles
+            const particles = 500;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particles * 3);
+            
+            for (let i = 0; i < particles * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 100;
+                positions[i + 1] = (Math.random() - 0.5) * 100;
+                positions[i + 2] = (Math.random() - 0.5) * 100;
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const material = new THREE.PointsMaterial({
+                color: 0x00ccff,
+                size: 0.2,
+                transparent: true,
+                opacity: 0.5
+            });
+            
+            const particleSystem = new THREE.Points(geometry, material);
+            scene.add(particleSystem);
+            
+            camera.position.z = 5;
+            
+            // Animation
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                const positions = geometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i] += (Math.random() - 0.5) * 0.05;
+                    positions[i + 1] += (Math.random() - 0.5) * 0.05;
+                    positions[i + 2] += (Math.random() - 0.5) * 0.05;
+                    
+                    // Boundary checks
+                    if (Math.abs(positions[i]) > 50) positions[i] = (Math.random() - 0.5) * 50;
+                    if (Math.abs(positions[i + 1]) > 50) positions[i + 1] = (Math.random() - 0.5) * 50;
+                    if (Math.abs(positions[i + 2]) > 50) positions[i + 2] = (Math.random() - 0.5) * 50;
+                }
+                
+                geometry.attributes.position.needsUpdate = true;
+                particleSystem.rotation.y += 0.001;
+                
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        
+        // Load data from Firebase
+        function loadGalleryData() {
+            const galleryRef = database.ref('galleryItems');
+            
+            galleryRef.on('value', (snapshot) => {
+                galleryGrid.innerHTML = '';
+                
+                if (!snapshot.exists()) {
+                    showStatus('No gallery items found. Add some through the admin panel!', false);
+                    return;
+                }
+                
+                const items = [];
+                snapshot.forEach((childSnapshot) => {
+                    const key = childSnapshot.key;
+                    const item = childSnapshot.val();
+                    items.push({ key, ...item });
+                });
+                
+                // Sort by timestamp (newest first)
+                items.sort((a, b) => b.timestamp - a.timestamp);
+                
+                // Create cards for each item
+                items.forEach(item => {
+                    createCard(item.imageUrl, item.prompt);
+                });
+                
+                showStatus(`Loaded ${items.length} gallery items successfully!`, true);
+            }, (error) => {
+                showStatus('Error loading gallery items: ' + error.message, false);
+                console.error('Firebase error:', error);
+            });
+        }
+        
+        // Initialize the app
+        window.addEventListener('DOMContentLoaded', () => {
+            initParticles();
+            loadGalleryData();
+        });
+    </script>
+</body>
+</html>
